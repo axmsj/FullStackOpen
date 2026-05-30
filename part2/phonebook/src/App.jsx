@@ -34,9 +34,14 @@ const App = () => {
         </div>
       </form>
       <h2>Numbers</h2>
-      {persons.map((x) => (
-        <div key={x.name}>{x.name}</div>
-      ))}
+
+      {persons.map((x) => {
+        if (x.name === newName) {
+          alert(`${newName} is already added to phonebook`);
+          setNewName('');
+        }
+        return <div key={x.name}>{x.name}</div>;
+      })}
     </div>
   );
 };
