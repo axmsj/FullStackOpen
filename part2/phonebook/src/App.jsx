@@ -1,8 +1,49 @@
 import { useState } from 'react';
 
+const Filter = (props) => {
+  return (
+    <>
+      filter shown with <input type='text' value={props.value} onChange={props.onChange} />
+    </>
+  );
+};
+
+const PersonForm = ({ onSubmit, valueName, onChangeName, valueNum, onChangeNum }) => {
+  console.log();
+  return (
+    <>
+      <form onSubmit={onSubmit}>
+        <div>
+          Name: <input type='text' value={valueName} onChange={onChangeName} />
+        </div>
+        <div>
+          Number: <input type='text' value={valueNum} onChange={onChangeNum} />
+        </div>
+        <button type='submit'>add</button>
+      </form>
+    </>
+  );
+};
+
+const Persons = (props) => {
+  console.log(props);
+  return (
+    <>
+      <div>
+        {props.valueName} {props.valueNum}
+      </div>
+    </>
+  );
+};
+
 const App = () => {
   // array for persons
-  const [persons, setPersons] = useState([{ name: 'Arto Hellas', number: '123-456-7890' }]);
+  const [persons, setPersons] = useState([
+    { name: 'Arto Hellas', number: '040-123456', id: 1 },
+    { name: 'Ada Lovelace', number: '39-44-5323523', id: 2 },
+    { name: 'Dan Abramov', number: '12-43-234345', id: 3 },
+    { name: 'Mary Poppendieck', number: '39-23-6423122', id: 4 },
+  ]);
 
   // for our input value
   const [newName, setNewName] = useState('');
@@ -10,19 +51,28 @@ const App = () => {
   // for our number value
   const [newNumber, setNewNumber] = useState('');
 
+  //filter input
+  const [newFilter, setNewFilter] = useState('');
+
   const addPerson = (e) => {
     e.preventDefault();
     console.log('button clicked', e.target);
     const personObject = {
       name: newName,
       number: newNumber,
+      id: Number(persons.length + 1),
     };
-    setPersons(persons.concat(personObject));
     setNewName('');
     setNewNumber('');
+    const nameExist = persons.some((person) => person.name.toLowerCase() === newName.toLowerCase());
+    if (nameExist) {
+      return alert(`${newName} is already added to phonebook`);
+    } else {
+      setPersons(persons.concat(personObject));
+    }
   };
 
-  const handleNote = (e) => {
+  const handleName = (e) => {
     console.log(e.target.value);
     setNewName(e.target.value);
   };
@@ -32,32 +82,35 @@ const App = () => {
     setNewNumber(e.target.value);
   };
 
+  const handleFilter = (e) => {
+    console.log(e.target.value);
+    setNewFilter(e.target.value);
+  };
+
+  const peopleToShow = persons.filter((person) => person.name.toLowerCase().includes(newFilter.toLowerCase()));
+  console.log(peopleToShow);
   return (
     <div>
       <h2>Phonebook</h2>
-      <form onSubmit={addPerson}>
-        <div>
-          name: <input value={newName} onChange={handleNote} required />
-        </div>
-        <div>
-          number: <input type='tel' value={newNumber} onChange={handleNumber} required />{' '}
-        </div>
-        <div>
-          <button type='submit'>add</button>
-        </div>
-      </form>
-      <h2>Numbers</h2>
+      <Filter value={newFilter} onChange={handleFilter} />
+      <h2>add a new</h2>
+      <PersonForm
+        onSubmit={addPerson}
+        valueName={newName}
+        onChangeName={handleName}
+        valueNum={newNumber}
+        onChangeNum={handleNumber}
+      />
 
-      {persons.map((x) => {
-        if (x.name === newName) {
-          alert(`${newName} is already added to phonebook`);
-          setNewName('');
+      <h2>Numbers</h2>
+      {peopleToShow.map((x) => {
+        {
+          return (
+            <div key={x.id}>
+              <Persons valueName={x.name} valueNum={x.number} />
+            </div>
+          );
         }
-        return (
-          <div key={x.name}>
-            {x.name} {x.number}
-          </div>
-        );
       })}
     </div>
   );
