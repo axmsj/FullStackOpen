@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import personService from './services/persons';
 
 const Filter = (props) => {
   return (
@@ -26,12 +27,12 @@ const PersonForm = ({ onSubmit, valueName, onChangeName, valueNum, onChangeNum }
   );
 };
 
-const Persons = (props) => {
-  console.log(props);
+const Persons = ({ valueName, valueNum, toggleDelete }) => {
   return (
     <>
       <div>
-        {props.valueName} {props.valueNum}
+        {valueName} {valueNum}
+        <button onClick={toggleDelete}>Delete</button>
       </div>
     </>
   );
@@ -52,11 +53,15 @@ const App = () => {
 
   const hook = () => {
     console.log('effect');
-    axios.get('http://localhost:3001/persons').then((res) => {
-      console.log('promise fulfilled');
-      setPersons(res.data);
-      console.log(res.data);
+    personService.getAll().then((initialPerson) => {
+      setPersons(initialPerson);
     });
+
+    // axios.get('http://localhost:3001/persons').then((res) => {
+    //   console.log('promise fulfilled');
+    //   setPersons(res.data);
+    //   console.log(res.data);
+    // });
   };
 
   useEffect(hook, []);
@@ -73,9 +78,30 @@ const App = () => {
     setNewNumber('');
     const nameExist = persons.some((person) => person.name.toLowerCase() === newName.toLowerCase());
     if (nameExist) {
-      return alert(`${newName} is already added to phonebook`);
+      let message = `${newName} is already added to phonebook, replace the old number with a new one?`;
+      if (window.confirm(message)) {
+        const person = persons.find((p) => p.name.toLowerCase() == newName.toLowerCase());
+        console.log(person);
+        const changedPerson = { ...person, number: newNumber };
+        console.log(changedPerson);
+
+        personService.update(person.id, changedPerson).then((res) => {
+          console.log(res);
+          setPersons(persons.map((p) => (p.id === person.id ? res : p)));
+        });
+      }
     } else {
-      setPersons(persons.concat(personObject));
+      axios.post('http://localhost:3001/persons', personObject).then((res) => {
+        setPersons(persons.concat(res.data));
+      });
+    }
+  };
+
+  const delClick = (currObj) => {
+    let message = `Delete ${currObj.name}?`;
+    if (window.confirm(message)) {
+      personService.del(currObj.id).then((res) => res);
+      setPersons(persons.filter((p) => p.id !== currObj.id));
     }
   };
 
@@ -95,7 +121,7 @@ const App = () => {
   };
 
   const peopleToShow = persons.filter((person) => person.name.toLowerCase().includes(newFilter.toLowerCase()));
-  console.log(peopleToShow);
+
   return (
     <div>
       <h2>Phonebook</h2>
@@ -114,7 +140,7 @@ const App = () => {
         {
           return (
             <div key={x.id}>
-              <Persons valueName={x.name} valueNum={x.number} />
+              <Persons valueName={x.name} valueNum={x.number} toggleDelete={() => delClick(x)} />
             </div>
           );
         }
