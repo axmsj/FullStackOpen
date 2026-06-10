@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import personService from './services/persons';
+import Notification from './components/Notification';
 
 const Filter = (props) => {
   return (
@@ -51,17 +52,15 @@ const App = () => {
   //filter input
   const [newFilter, setNewFilter] = useState('');
 
+  const [displayMessage, setDisplayMessage] = useState(null);
+
+  const [isSuccess, setIsSuccess] = useState();
+
   const hook = () => {
     console.log('effect');
     personService.getAll().then((initialPerson) => {
       setPersons(initialPerson);
     });
-
-    // axios.get('http://localhost:3001/persons').then((res) => {
-    //   console.log('promise fulfilled');
-    //   setPersons(res.data);
-    //   console.log(res.data);
-    // });
   };
 
   useEffect(hook, []);
@@ -80,18 +79,29 @@ const App = () => {
     if (nameExist) {
       let message = `${newName} is already added to phonebook, replace the old number with a new one?`;
       if (window.confirm(message)) {
-        const person = persons.find((p) => p.name.toLowerCase() == newName.toLowerCase());
-        console.log(person);
+        const person = persons.find((p) => p.name.toLowerCase() === newName.toLowerCase());
         const changedPerson = { ...person, number: newNumber };
-        console.log(changedPerson);
 
-        personService.update(person.id, changedPerson).then((res) => {
-          console.log(res);
-          setPersons(persons.map((p) => (p.id === person.id ? res : p)));
-        });
+        personService
+          .update(person.id, changedPerson)
+          .then((res) => {
+            setPersons(persons.map((p) => (p.id === person.id ? res : p)));
+          })
+          .catch((error) => {
+            setIsSuccess(false);
+            setDisplayMessage(`Infomation on ${person.name} has already been removed from the server`);
+            setTimeout(() => {
+              setDisplayMessage(null);
+            }, 5000);
+          });
       }
     } else {
       axios.post('http://localhost:3001/persons', personObject).then((res) => {
+        setIsSuccess(true);
+        setDisplayMessage(`Added ${res.data.name}`);
+        setTimeout(() => {
+          setDisplayMessage(null);
+        }, 3000);
         setPersons(persons.concat(res.data));
       });
     }
@@ -125,6 +135,7 @@ const App = () => {
   return (
     <div>
       <h2>Phonebook</h2>
+      <Notification message={displayMessage} success={isSuccess} />
       <Filter value={newFilter} onChange={handleFilter} />
       <h2>add a new</h2>
       <PersonForm
