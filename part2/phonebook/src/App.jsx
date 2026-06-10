@@ -54,7 +54,7 @@ const App = () => {
 
   const [displayMessage, setDisplayMessage] = useState(null);
 
-  const [isSuccess, setIsSuccess] = useState();
+  const [isSuccess, setIsSuccess] = useState(null);
 
   const hook = () => {
     console.log('effect');
@@ -89,7 +89,7 @@ const App = () => {
           })
           .catch((error) => {
             setIsSuccess(false);
-            setDisplayMessage(`Infomation on ${person.name} has already been removed from the server`);
+            setDisplayMessage(`Information on ${person.name} has already been removed from the server`);
             setTimeout(() => {
               setDisplayMessage(null);
             }, 5000);
