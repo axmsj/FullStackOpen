@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import Footer from './components/Footer';
 import Note from './components/Note';
 import noteService from './services/notes';
+import Notification from './components/Notifications';
 
 const App = () => {
   // notes array
-  const [notes, setNotes] = useState([]);
+  const [notes, setNotes] = useState(null);
 
   //user submitted input
   const [newNote, setNewNote] = useState('');
@@ -13,10 +14,16 @@ const App = () => {
   // keeps track of notes to be display
   const [showAll, setShowAll] = useState(true);
 
+  const [errorMessage, setErrorMessage] = useState(null);
+
   useEffect(() => {
     noteService.getAll().then((initialResponse) => setNotes(initialResponse));
   }, []);
 
+  //first render nothing renders, when notes arrive from backend then effect will setNotes
+  if (!notes) {
+    return null;
+  }
   // on form submit
   const addNote = (e) => {
     e.preventDefault();
@@ -41,9 +48,11 @@ const App = () => {
         setNotes(notes.map((note) => (note.id === id ? returnedNote : note)));
       })
       .catch((err) => {
-        alert(`the note '${note.content} was already deleted from the server`);
+        setErrorMessage(`the note '${note.content}' was already deleted from the server`);
+        setTimeout(() => {
+          setErrorMessage(null);
+        }, 5000);
         const filterNotes = notes.filter((n) => n.id !== id);
-
         setNotes(notes.filter((n) => n.id !== id));
       });
   };
@@ -59,6 +68,7 @@ const App = () => {
   return (
     <div>
       <h1>Notes</h1>
+      <Notification message={errorMessage} />
       <div>
         <button onClick={() => setShowAll(!showAll)}>show {showAll ? 'important' : 'all'}</button>
       </div>
@@ -71,6 +81,7 @@ const App = () => {
         <input value={newNote} onChange={handleNoteChange} />
         <button type='submit'>save</button>
       </form>
+      <Footer />
     </div>
   );
 };
