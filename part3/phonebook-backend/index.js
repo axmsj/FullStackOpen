@@ -4,6 +4,7 @@ const morgan = require('morgan');
 
 app.use(express.json());
 app.use(morgan(':method :url :status :body'));
+
 morgan.token('body', (req) => {
   return JSON.stringify(req.body);
 });
@@ -98,7 +99,7 @@ app.post('/api/persons', (req, res) => {
 app.delete('/api/persons/:id', (req, res) => {
   const id = req.params.id;
   persons = persons.filter((p) => p.id !== id);
-  res.status(404).end();
+  res.status(204).end();
 });
 
 const PORT = 3001;
