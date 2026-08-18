@@ -4,6 +4,7 @@ const morgan = require('morgan');
 
 app.use(express.json());
 app.use(morgan(':method :url :status :body'));
+app.use(express.static('dist'));
 
 morgan.token('body', (req) => {
   return JSON.stringify(req.body);
