@@ -7,7 +7,6 @@ const Note = require('./models/note');
 const password = process.argv[2];
 
 mongoose.set('strictQuery', false);
-mongoose.connect(url, { family: 4 });
 
 const noteSchema = new mongoose.Schema({
   content: String,
