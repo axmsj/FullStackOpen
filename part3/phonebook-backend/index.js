@@ -1,10 +1,12 @@
+require('dotenv').config();
 const express = require('express');
 const app = express();
 const morgan = require('morgan');
+const Person = require('./models/person');
 
+app.use(express.static('dist'));
 app.use(express.json());
 app.use(morgan(':method :url :status :body'));
-app.use(express.static('dist'));
 
 morgan.token('body', (req) => {
   return JSON.stringify(req.body);
@@ -25,28 +27,28 @@ morgan.token('body', (req) => {
 
 // app.use(unknownEndpoint);
 
-let persons = [
-  {
-    id: '1',
-    name: 'Arto Hellas',
-    number: '040-123456',
-  },
-  {
-    id: '2',
-    name: 'Ada Lovelace',
-    number: '39-44-5323523',
-  },
-  {
-    id: '3',
-    name: 'Dan Abramov',
-    number: '12-43-234345',
-  },
-  {
-    id: '4',
-    name: 'Mary Poppendieck',
-    number: '39-23-6423122',
-  },
-];
+// let persons = [
+//   {
+//     id: '1',
+//     name: 'Arto Hellas',
+//     number: '040-123456',
+//   },
+//   {
+//     id: '2',
+//     name: 'Ada Lovelace',
+//     number: '39-44-5323523',
+//   },
+//   {
+//     id: '3',
+//     name: 'Dan Abramov',
+//     number: '12-43-234345',
+//   },
+//   {
+//     id: '4',
+//     name: 'Mary Poppendieck',
+//     number: '39-23-6423122',
+//   },
+// ];
 
 app.get('/', (req, res) => {
   res.send('<h1>HOME</h1>');
@@ -60,13 +62,18 @@ app.get('/info', (req, res) => {
 });
 
 app.get('/api/persons', (req, res) => {
-  res.json(persons);
+  Person.find({}).then((person) => {
+    res.json(person);
+  });
 });
 
-app.get('/api/persons/:id', (req, res) => {
+app.get('/api/persons/:id', (req, res, next) => {
   const id = req.params.id;
-  const person = persons.find((p) => p.id === id);
-  res.send(person);
+  Person.findById(id)
+    .then((foundPerson) => {
+      res.send(foundPerson);
+    })
+    .catch((err) => next(err));
 });
 
 const generateId = () => {
@@ -74,7 +81,7 @@ const generateId = () => {
   return String(id + 1);
 };
 
-app.post('/api/persons', (req, res) => {
+app.post('/api/persons', (req, res, next) => {
   const body = req.body;
   if (!body.name) {
     return res.status(400).json({
@@ -86,22 +93,59 @@ app.post('/api/persons', (req, res) => {
     });
   }
 
-  const person = {
+  const person = new Person({
     name: body.name,
     number: body.number,
-    id: generateId(),
-  };
+  });
 
-  persons = persons.concat(person);
-
-  res.json(persons);
+  person
+    .save()
+    .then((savedPerson) => {
+      res.json(savedPerson);
+    })
+    .catch((err) => next(err));
 });
 
-app.delete('/api/persons/:id', (req, res) => {
+app.put('/api/persons/:id', (req, res, next) => {
+  const { name, number } = req.body;
   const id = req.params.id;
-  persons = persons.filter((p) => p.id !== id);
-  res.status(204).end();
+
+  Person.findById(id)
+    .then((person) => {
+      if (!person) {
+        return res.status(404).end();
+      }
+
+      person.number = number;
+
+      return person.save().then((updatedPerson) => {
+        res.json(updatedPerson);
+      });
+    })
+    .catch((err) => next(err));
 });
+
+app.delete('/api/persons/:id', (req, res, next) => {
+  const id = req.params.id;
+
+  Person.findByIdAndDelete(id)
+    .then((result) => {
+      return res.status(204).end();
+    })
+    .catch((err) => next(err));
+});
+
+const errorHandler = (err, req, res, next) => {
+  console.log(err.message);
+  if (err.name === 'CastError') {
+    return res.status(400).send({ error: 'Malformatted id' });
+  } else if (err.name === 'ValidationError') {
+    return res.status(400).json({ error: err.message });
+  }
+  next(err);
+};
+
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
