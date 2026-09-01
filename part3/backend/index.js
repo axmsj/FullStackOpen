@@ -4,25 +4,8 @@ const mongoose = require('mongoose');
 const app = express();
 const Note = require('./models/note');
 
-const password = process.argv[2];
-
-mongoose.set('strictQuery', false);
-
-const noteSchema = new mongoose.Schema({
-  content: String,
-  important: Boolean,
-});
-
-noteSchema.set('toJSON', {
-  transform: (document, returnedObject) => {
-    returnedObject.id = returnedObject._id.toString();
-    delete returnedObject._id;
-    delete returnedObject.__v;
-  },
-});
-
-app.use(express.json());
 app.use(express.static('dist'));
+app.use(express.json());
 
 let notes = [
   {
@@ -52,22 +35,25 @@ app.get('/api/notes', (req, res) => {
   });
 });
 
-app.get('/api/notes/:id', (req, res) => {
+app.get('/api/notes/:id', (req, res, next) => {
   const { id } = req.params;
-  const note = notes.find((note) => note.id === id);
-  if (note) {
-    res.json(note);
-  } else {
-    res.status(404).end();
-  }
+  Note.findById(id)
+    .then((note) => {
+      if (note) {
+        res.json(note);
+      } else {
+        res.status(404).end();
+      }
+    })
+    .catch((err) => next(err));
 });
 
-const generateId = () => {
-  const maxId = notes.length > 0 ? Math.max(...notes.map((n) => Number(n.id))) : 0;
-  return String(maxId + 1);
-};
+// const generateId = () => {
+//   const maxId = notes.length > 0 ? Math.max(...notes.map((n) => Number(n.id))) : 0;
+//   return String(maxId + 1);
+// };
 
-app.post('/api/notes', (req, res) => {
+app.post('/api/notes', (req, res, next) => {
   const body = req.body;
   console.log('body', body);
 
@@ -77,21 +63,60 @@ app.post('/api/notes', (req, res) => {
     });
   }
 
-  const note = {
+  const note = new Note({
     content: body.content,
-    important: body.imporant || false,
-    id: generateId(),
-  };
+    important: body.important || false,
+  });
 
-  notes = notes.concat(note);
-  res.json(note);
+  note
+    .save()
+    .then((savedNote) => {
+      res.json(savedNote);
+    })
+    .catch((err) => next(err));
 });
 
-app.delete('/api/notes/:id', (req, res) => {
+app.put('/api/notes/:id', (req, res, next) => {
+  const { content, important } = req.body;
   const id = req.params.id;
-  notes = notes.filter((note) => note.id !== id);
-  res.status(204).end();
+
+  Note.findById(id)
+    .then((note) => {
+      if (!note) {
+        return res.status(404).end();
+      }
+
+      note.content = content;
+      note.important = important;
+
+      return note.save().then((updatedNote) => {
+        res.json(updatedNote);
+      });
+    })
+    .catch((err) => next(err));
 });
+
+app.delete('/api/notes/:id', (req, res, next) => {
+  const id = req.params.id;
+  Note.findByIdAndDelete(id)
+    .then((result) => {
+      res.status(204).end();
+    })
+    .catch((err) => next(err));
+});
+
+const errorHandler = (err, req, res, next) => {
+  console.error(err.message);
+
+  if (err.name === 'CastError') {
+    return res.status(400).send({ error: 'malformatted id' });
+  } else if (err.name === 'ValidationError') {
+    return res.status(400).json({ error: err.message });
+  }
+  next(err);
+};
+
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT);

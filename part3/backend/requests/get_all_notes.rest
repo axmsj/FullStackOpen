@@ -2,4 +2,13 @@ GET http://localhost:3001/api/notes/
 
 
 ###
-DELETE http://localhost:3001/api/notes/4 
+DELETE http://localhost:3001/api/notes/6a947fabf733d61938ea33c5
+
+###
+PUT http://localhost:3001/api/notes/6a90fd58bb7d700a6e8ffb6a
+Content-Type: application/json
+
+{
+    "content": "this is from the vscode client, backend",
+    "important": "true"
+}
