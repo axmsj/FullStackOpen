@@ -1,4 +1,5 @@
-const app = require('./app')
+require('dotenv').config()
+const app = require('./app') // the express app
 const config = require('./utils/config')
 const logger = require('./utils/logger')
 

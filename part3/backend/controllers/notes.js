@@ -44,7 +44,7 @@ notesRouter.post('/', (req, res, next) => {
     .catch((err) => next(err))
 })
 
-noteRouter.put('/:id', (req, res, next) => {
+notesRouter.put('/:id', (req, res, next) => {
   const { content, important } = req.body
   const { id } = req.params
 
